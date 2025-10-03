@@ -16,6 +16,11 @@ build/
 .env.test.local
 .env.production.local
 
+# Prisma
+# Note: Keep prisma/schema.prisma and prisma/migrations/ in git
+# Only ignore generated files and sensitive data
+prisma/generated/
+
 # IDE/Editor files
 .vscode/
 .idea/
@@ -97,3 +102,4 @@ jspm_packages/
 
 # TernJS port file
 .tern-port
+/src/generated/prisma
