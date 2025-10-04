@@ -43,6 +43,9 @@ export const login = async (req:Request, res:Response) => {
     if(!compareSync(password, user.password)){
         throw Error("incorrect password")
     }
+    //in order to generate a token, we need to sign a jwt with some payload
+    //generally we provide the userId, for which user the token belongs(so userId -> user.id)
+    //the second arguement is the JWT_SECRET
     const token = jwt.sign({
         userId: user.id
     }, JWT_SECRET)
