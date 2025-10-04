@@ -5,35 +5,38 @@ import * as jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../secrets";
 import { BadRequestsException } from "../exceptions/bad-requests";
 import { ErrorCodes } from "../exceptions/root";
+import { UnprocessibleEntity } from "../exceptions/validation";
+import { SignupSchema } from "../schema/users";
 
 export const signUp = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const { email, password, name } = req.body; //in signUp we will be getting all the data in the body so we have to destructure the data first
+    SignupSchema.parse(req.body)
+    const { email, password, name } = req.body; //in signUp we will be getting all the data in the body so we have to destructure the data first
 
-  let user = await prismaClient.user.findFirst({
-    where: {
-      email,
-    },
-  });
-  if (user) {
-    return next(
-      new BadRequestsException(
-        "User already exists",
-        ErrorCodes.USER_ALREADY_EXISTS
-      )
-    );
-  }
-  user = await prismaClient.user.create({
-    data: {
-      name,
-      email,
-      password: hashSync(password, 10), //10 -> salt round
-    },
-  });
-  res.json(user);
+    let user = await prismaClient.user.findFirst({
+      where: {
+        email,
+      },
+    });
+    if (user) {
+      return next(
+        new BadRequestsException(
+          "User already exists",
+          ErrorCodes.USER_ALREADY_EXISTS
+        )
+      );
+    }
+    user = await prismaClient.user.create({
+      data: {
+        name,
+        email,
+        password: hashSync(password, 10), //10 -> salt round
+      },
+    });
+    res.json(user);
 };
 
 //req:Request -> req of type Request
@@ -55,10 +58,12 @@ export const login = async (
     );
   }
   if (!compareSync(password, user.password)) {
-    return next(new BadRequestsException(
+    return next(
+      new BadRequestsException(
         "incorrect password",
         ErrorCodes.INCORRECT_PASSWORD
-    ))
+      )
+    );
   }
   //in order to generate a token, we need to sign a jwt with some payload
   //generally we provide the userId, for which user the token belongs(so userId -> user.id)
@@ -71,8 +76,6 @@ export const login = async (
   );
   res.json({ user, token });
 };
-
-
 
 //# Complete Flow Example
 
