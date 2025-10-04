@@ -7,11 +7,11 @@ import { BadRequestsException } from "../exceptions/bad-requests";
 import { ErrorCodes } from "../exceptions/root";
 import { UnprocessibleEntity } from "../exceptions/validation";
 import { SignupSchema } from "../schema/users";
+import { NotFoundException } from "../exceptions/not-found";
 
 export const signUp = async (
   req: Request,
-  res: Response,
-  next: NextFunction
+  res: Response
 ) => {
     SignupSchema.parse(req.body)
     const { email, password, name } = req.body; //in signUp we will be getting all the data in the body so we have to destructure the data first
@@ -22,12 +22,7 @@ export const signUp = async (
       },
     });
     if (user) {
-      return next(
-        new BadRequestsException(
-          "User already exists",
-          ErrorCodes.USER_ALREADY_EXISTS
-        )
-      );
+      throw new BadRequestsException("User already exists!", ErrorCodes.USER_ALREADY_EXISTS)
     }
     user = await prismaClient.user.create({
       data: {
@@ -42,8 +37,7 @@ export const signUp = async (
 //req:Request -> req of type Request
 export const login = async (
   req: Request,
-  res: Response,
-  next: NextFunction
+  res: Response
 ) => {
   const { email, password } = req.body;
 
@@ -53,17 +47,10 @@ export const login = async (
     },
   });
   if (!user) {
-    return next(
-      new BadRequestsException("User not found", ErrorCodes.USER_NOT_FOUND)
-    );
+    throw new NotFoundException("user not found", ErrorCodes.USER_NOT_FOUND)
   }
   if (!compareSync(password, user.password)) {
-    return next(
-      new BadRequestsException(
-        "incorrect password",
-        ErrorCodes.INCORRECT_PASSWORD
-      )
-    );
+    throw new BadRequestsException("incorrect password", ErrorCodes.INCORRECT_PASSWORD)
   }
   //in order to generate a token, we need to sign a jwt with some payload
   //generally we provide the userId, for which user the token belongs(so userId -> user.id)
