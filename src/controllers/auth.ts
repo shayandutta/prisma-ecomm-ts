@@ -1,44 +1,41 @@
-import { NextFunction, type Request, type Response } from "express"; //imported by @types/express
+import { type Request, type Response } from "express";
 import { prismaClient } from "..";
 import { compareSync, hashSync } from "bcrypt";
 import * as jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../secrets";
 import { BadRequestsException } from "../exceptions/bad-requests";
 import { ErrorCodes } from "../exceptions/root";
-import { UnprocessibleEntity } from "../exceptions/validation";
 import { SignupSchema } from "../schema/users";
 import { NotFoundException } from "../exceptions/not-found";
+import { UnauthorizedException } from "../exceptions/unauthorized";
 
-export const signUp = async (
-  req: Request,
-  res: Response
-) => {
-    SignupSchema.parse(req.body)
-    const { email, password, name } = req.body; //in signUp we will be getting all the data in the body so we have to destructure the data first
+export const signUp = async (req: Request, res: Response) => {
+  SignupSchema.parse(req.body);
+  const { email, password, name } = req.body;
 
-    let user = await prismaClient.user.findFirst({
-      where: {
-        email,
-      },
-    });
-    if (user) {
-      throw new BadRequestsException("User already exists!", ErrorCodes.USER_ALREADY_EXISTS)
-    }
-    user = await prismaClient.user.create({
-      data: {
-        name,
-        email,
-        password: hashSync(password, 10), //10 -> salt round
-      },
-    });
-    res.json(user);
+  let user = await prismaClient.user.findFirst({
+    where: {
+      email,
+    },
+  });
+  if (user) {
+    throw new BadRequestsException(
+      "User already exists!",
+      ErrorCodes.USER_ALREADY_EXISTS
+    );
+  }
+  user = await prismaClient.user.create({
+    data: {
+      name,
+      email,
+      password: hashSync(password, 10), //10 -> salt round
+    },
+  });
+  res.json(user);
 };
 
 //req:Request -> req of type Request
-export const login = async (
-  req: Request,
-  res: Response
-) => {
+export const login = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   let user = await prismaClient.user.findFirst({
@@ -47,10 +44,13 @@ export const login = async (
     },
   });
   if (!user) {
-    throw new NotFoundException("user not found", ErrorCodes.USER_NOT_FOUND)
+    throw new NotFoundException("user not found", ErrorCodes.USER_NOT_FOUND);
   }
   if (!compareSync(password, user.password)) {
-    throw new BadRequestsException("incorrect password", ErrorCodes.INCORRECT_PASSWORD)
+    throw new BadRequestsException(
+      "incorrect password",
+      ErrorCodes.INCORRECT_PASSWORD
+    );
   }
   //in order to generate a token, we need to sign a jwt with some payload
   //generally we provide the userId, for which user the token belongs(so userId -> user.id)
@@ -76,3 +76,31 @@ export const login = async (
 //     "ErrorCodes": 1002,
 //     "errors": null
 //   }
+
+//me -> return the logged in user (logged in user will be based on the auth token, will send by headers)  -> authMiddleware
+//me controller
+// export const me = async (req: Request, res: Response) => {
+//   res.json(req.user); //in authMiddleware we have assigned the user to the req object so in the me api we can directly use the req.user
+// };
+
+export const me = async (req: Request, res: Response) => {
+  const token = req.headers.authorization;
+  if (!token) {
+    throw new UnauthorizedException("Unauthorized", ErrorCodes.UNAUTHORIZED)
+  }
+  
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as any;
+    const user = await prismaClient.user.findFirst({
+      where: { id: payload.userId }
+    });
+    
+    if (!user) {
+      throw new UnauthorizedException("Unauthorized", ErrorCodes.UNAUTHORIZED)
+    }
+    
+    res.json(user);
+  } catch (error) {
+    res.status(401).json({ error: "Invalid token" });
+  }
+};
