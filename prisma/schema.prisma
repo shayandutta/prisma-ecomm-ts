@@ -30,3 +30,17 @@ model User{
 
   @@map("users")
 }
+
+
+
+model Product{
+  id Int @id @default(autoincrement())
+  name String
+  description String @db.Text //@db.Text -> in order to use unlimited characters in MYSQL(makes the column of text type)
+  price Decimal
+  tags String //comma separated texts
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("products")
+}
