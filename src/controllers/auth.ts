@@ -79,28 +79,8 @@ export const login = async (req: Request, res: Response) => {
 
 //me -> return the logged in user (logged in user will be based on the auth token, will send by headers)  -> authMiddleware
 //me controller
-// export const me = async (req: Request, res: Response) => {
-//   res.json(req.user); //in authMiddleware we have assigned the user to the req object so in the me api we can directly use the req.user
-// };
-
 export const me = async (req: Request, res: Response) => {
-  const token = req.headers.authorization;
-  if (!token) {
-    throw new UnauthorizedException("Unauthorized", ErrorCodes.UNAUTHORIZED)
-  }
-  
-  try {
-    const payload = jwt.verify(token, JWT_SECRET) as any;
-    const user = await prismaClient.user.findFirst({
-      where: { id: payload.userId }
-    });
-    
-    if (!user) {
-      throw new UnauthorizedException("Unauthorized", ErrorCodes.UNAUTHORIZED)
-    }
-    
-    res.json(user);
-  } catch (error) {
-    res.status(401).json({ error: "Invalid token" });
-  }
+  const user = req.user
+  res.json(user); //in authMiddleware we have assigned the user to the req object so in the me api we can directly use the req.user
 };
+

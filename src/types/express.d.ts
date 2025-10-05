@@ -1,3 +1,4 @@
+/// <reference types="express" />
 //declaring type overwrite
 
 import { User } from "@prisma/client";
@@ -9,5 +10,3 @@ declare global {
     }
   }
 }
-
-export {};
