@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
-import { AddressSchema } from "../schema/users";
+import { AddressSchema, UpdateUserSchema } from "../schema/users";
 import { prismaClient } from "..";
-import { User } from "@prisma/client";
+import { Address, User } from "@prisma/client";
 import { NotFoundException } from "../exceptions/not-found";
 import { ErrorCodes } from "../exceptions/root";
+import { BadRequestsException } from "../exceptions/bad-requests";
 
 export const addAddress = async (
   req: Request & { user: User },
@@ -65,4 +66,58 @@ export const listAddress = async (
     },
   });
   res.json(addresses);
+};
+
+export const updateUser = async (
+  req: Request & { user: User },
+  res: Response
+) => {
+
+  const validatedData : any = UpdateUserSchema.parse(req.body);
+  let shippingAddress: Address | null;
+  let billingAddress: Address | null;
+
+  if (validatedData.defaultBillingAddressId) {
+    try {
+      shippingAddress = await prismaClient.address.findFirstOrThrow({
+        where: {
+          id: validatedData.defaultBillingAddressId,
+        },
+      });
+    } catch (err) {
+      throw new NotFoundException(
+        "Address not found",
+        ErrorCodes.ADDRESS_NOT_FOUND
+      );
+    }
+    if(shippingAddress?.userId != req.user.id){
+      throw new BadRequestsException("Address does not belong to user", ErrorCodes.ADDRESS_DOES_NOT_BELONG)
+    }
+  }
+
+  if (validatedData.defaultShippingAddressId) {
+    try {
+      billingAddress = await prismaClient.address.findFirstOrThrow({
+        where: {
+          id: validatedData.defaultShippingAddressId,
+        },
+      });
+    } catch (err) {
+      throw new NotFoundException(
+        "Address not found",
+        ErrorCodes.ADDRESS_NOT_FOUND
+      );
+    }
+    if(billingAddress?.userId != req.user.id){
+      throw new BadRequestsException("Address does not belong to user", ErrorCodes.ADDRESS_DOES_NOT_BELONG)
+    }
+  }
+
+  const updatedUser = await prismaClient.user.update({
+    where: {
+      id: +req.user.id,
+    },
+    data: validatedData,
+  });
+  res.json(updatedUser)
 };
