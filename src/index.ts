@@ -13,7 +13,24 @@ app.use("/api", RootRouter);
 
 export const prismaClient = new PrismaClient({
   log: ["query"],
-});
+}).$extends({ //computed field for order address
+  result:{
+    address:{
+      formattedAddress:{
+        need:{
+          lineOne: true,
+          lineTwo: true,
+          city: true,
+          country: true,
+          pincode: true
+        },
+        compute(addr){
+          return `${addr.lineOne}, ${addr.lineTwo}, ${addr.city}, ${addr.country}, ${addr.pincode}`
+        }
+      }
+    }
+  }
+})
 
 app.use(errorMiddleware);
 
