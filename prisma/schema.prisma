@@ -31,6 +31,8 @@ model User{
   updatedAt DateTime @updatedAt
 
   addresses Address[] //one user can have multiple addresses
+  cartItems CartItems[]
+
 
   @@map("users")
 }
@@ -61,8 +63,33 @@ model Product{
   tags String //comma separated texts
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  cartItems CartItems[]
 
   @@map("products")
 }
 
 
+model CartItems{
+  id Int @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  quantity Int
+  userId Int
+  user User @relation(fields: [userId], references: [id])
+  productId Int
+  product Product @relation(fields: [productId], references: [id])
+
+
+  @@map("cart_items")
+}
+
+
+
+// Which id belongs to whom ?
+
+// User.id: Belongs to a user row.
+// Address.userId: Belongs to the Address row but points to the owning User.id.
+// Product.id: Belongs to a product row.
+// CartItems.userId: Belongs to the cart item but points to User.id.
+// CartItems.productId: Belongs to the cart item but points to Product.id.
+// CartItems.id: The cart item’s own primary key.
