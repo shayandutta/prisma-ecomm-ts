@@ -42,7 +42,6 @@ export const updateProduct = async (req: Request, res: Response) => {
 };
 
 export const deleteProduct = async (req: Request, res: Response) => {
-    const product = req.body
 
     try{
         const deletedProduct = await prismaClient.product.delete({
@@ -65,7 +64,31 @@ export const ListProducts = async (req: Request, res: Response) => {
     //     data: []
     // }
 
-    
+    const count = await prismaClient.product.count(); //count is necessary to provide some data to the frontend team so that they can write the pagination logic on the frontend
+    const products = await prismaClient.product.findMany({
+      skip: +(req.query.skip || 0),
+      take: 5
+    })
+    res.json({
+      count,
+      data:{
+        products
+      }
+    })
 };
 
-export const getProductbyId = async (req: Request, res: Response) => {};
+export const getProductbyId = async (req: Request, res: Response) => {
+  //we need to add try or catch here because product may not exist
+  try{
+    const product = await prismaClient.product.findFirstOrThrow({
+      where:{
+        id: +(req.params.id || 0)
+      }
+    })
+    res.json(product);
+  }
+  catch(err){
+    throw new NotFoundException("Product not found", ErrorCodes.PRODUCT_NOT_FOUND);
+  }
+
+};
