@@ -10,7 +10,7 @@ import { NotFoundException } from "../exceptions/not-found";
 import { UnauthorizedException } from "../exceptions/unauthorized";
 
 export const signUp = async (req: Request, res: Response) => {
-  SignupSchema.parse(req.body);
+  SignupSchema.parse(req.body); //zod validates first then proceeds forward if everything is alright else throws error with errorHandler
   const { email, password, name } = req.body;
 
   let user = await prismaClient.user.findFirst({
