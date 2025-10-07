@@ -15,3 +15,19 @@ RootRouter.use('/cart', cartRoutes)
 RootRouter.use('/orders', orderRoutes)
 
 export default RootRouter;
+
+
+
+
+//ADMIN FUNCTIONALITY 
+//1. user management
+//      a. list users
+//      b. get user by id
+//      c. change user role
+
+//2. order management
+//      a. list all orders (filter by status)
+//      b. change order status
+
+//3. products
+//      a. search api for products (for both users and admins) -> full text search
