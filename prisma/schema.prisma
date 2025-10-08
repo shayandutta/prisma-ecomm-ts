@@ -73,6 +73,8 @@ model Product{
   cartItems CartItems[]
   orders OrderProduct[]
 
+  @@fulltext([name, description, tags])  //in these three columns of the products table we will perform the full text search
+
   @@map("products")
 }
 

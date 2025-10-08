@@ -1292,6 +1292,59 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+      "/products/search": {
+        get: {
+          tags: ["Products"],
+          summary: "Search products",
+          description:
+            "Full-text search across product names, descriptions, and tags. Available to all authenticated users.",
+          security: [
+            {
+              BearerAuth: [],
+            },
+          ],
+          parameters: [
+            {
+              in: "query",
+              name: "q",
+              required: true,
+              schema: {
+                type: "string",
+              },
+              description:
+                "Search query to match against product names, descriptions, and tags",
+              example: "tea organic",
+            },
+            {
+              in: "query",
+              name: "skip",
+              schema: {
+                type: "integer",
+                default: 0,
+              },
+              description: "Number of records to skip for pagination",
+            },
+          ],
+          responses: {
+            "200": {
+              description: "List of matching products (max 5 per request)",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "array",
+                    items: {
+                      $ref: "#/components/schemas/Product",
+                    },
+                  },
+                },
+              },
+            },
+            "401": {
+              $ref: "#/components/responses/UnauthorizedError",
+            },
+          },
+        },
+      },
       "/cart": {
         post: {
           tags: ["Cart"],
