@@ -69,52 +69,132 @@ export const createOrder = async (
   });
 };
 
-export const listOrders = async (req: Request & {user:User}, res: Response) => {
+export const listOrders = async (
+  req: Request & { user: User },
+  res: Response
+) => {
   const orders = await prismaClient.order.findMany({
-    where:{
-      userId: req.user?.id
-    }
-  })
+    where: {
+      userId: req.user?.id,
+    },
+  });
   res.json(orders);
 };
 
-export const cancelOrder = async (req: Request & {user:User}, res: Response) => {
+export const cancelOrder = async (
+  req: Request & { user: User },
+  res: Response
+) => {
   //wrap it inside transaction
   //check if the user is cancelling its own order
-  try{
+  try {
     const order = await prismaClient.order.update({
-      where:{
+      where: {
         id: +(req.params.id || 0),
       },
-      data:{
-        status : "CANCELLED"
-      }
-    })
+      data: {
+        status: "CANCELLED",
+      },
+    });
     await prismaClient.orderEvent.create({
-      data:{
+      data: {
         orderId: order.id,
-        status: 'CANCELLED'
-      }
-    })
-    res.json(order)
-  }catch(err){
-    throw new NotFoundException("Order not found", ErrorCodes.ORDER_NOT_FOUND)
+        status: "CANCELLED",
+      },
+    });
+    res.json(order);
+  } catch (err) {
+    throw new NotFoundException("Order not found", ErrorCodes.ORDER_NOT_FOUND);
   }
 };
 
 export const getOrderById = async (req: Request, res: Response) => {
-  try{
+  try {
     const order = await prismaClient.order.findFirstOrThrow({
-      where:{
-        id: +(req.params.id || 0)
+      where: {
+        id: +(req.params.id || 0),
       },
-      include:{
+      include: {
         products: true,
-        events: true
+        events: true,
+      },
+    });
+    res.json(order);
+  } catch (err) {
+    throw new NotFoundException("Order not found", ErrorCodes.ORDER_NOT_FOUND);
+  }
+};
+
+export const listAllOrders = async (
+  req: Request & { user: User },
+  res: Response
+) => {
+   let whereClause = {};//whereClause is a dynamic filter object that determines which orders will be retrieved from the database. It's built conditionally based on whether a status parameter is provided.
+   //Starts with an empty object (no filters = return all orders)
+   const status = req.query.status
+   //If a status is provided in the URL (e.g., /orders/PENDING), it updates whereClause to filter by that status
+   if(status) {
+    whereClause = {
+      status
+    }
+   }
+   //If no status is provided, whereClause remains empty
+
+   const orders = await prismaClient.order.findMany({
+    //where: whereClause - applies the filter (either empty or with status)
+    // skip - implements pagination offset (from query string, defaults to 0)
+    // take:5 - limits results to 5 orders per page
+    where: whereClause,
+    skip:+(req.query.skip || 0),
+    take:5
+   })
+   res.json(orders)
+};
+
+export const changeStatus = async (req: Request, res: Response) => {
+  try{
+    const order = await prismaClient.order.update({
+      where:{
+        id:+(req.params.id || 0)
+      }, data:{
+        status: req.body.status
       }
     })
-    res.json(order)
+  await prismaClient.orderEvent.create({
+    data:{
+      orderId: order.id,
+      status: req.body.status
+    }
+  })
+  res.json(order)
   }catch(err){
     throw new NotFoundException("Order not found", ErrorCodes.ORDER_NOT_FOUND)
   }
+  
 };
+export const listUserOrders = async (req: Request, res: Response) => {
+  let whereClause:any = {
+    userId:+(req.params.id || 0)
+  };
+  const status = req.query.status
+  if(status){
+    whereClause={
+      ...whereClause,
+      status
+    }
+  }
+  const orders = await prismaClient.order.findMany({
+    where:whereClause,
+    skip:+(req.query.skip || 0),
+    take:5
+  })
+  res.json(orders)
+};
+
+
+
+// What is whereClause?
+// whereClause is a dynamic filter object that gets passed to Prisma's findMany() method to determine which orders to retrieve from the database.
+// How it works:
+// Step 1: Start with a base filter that always includes the userId (so you only get orders for that specific user)
+// Step 2: If a status is provided in the query string, replace the entire whereClause object with a new one that includes both filters.
