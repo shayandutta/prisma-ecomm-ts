@@ -4,33 +4,38 @@ import RootRouter from "./routes";
 import { PrismaClient } from "@prisma/client";
 import { errorMiddleware } from "./middlewares/errors";
 import { SignupSchema } from "./schema/users";
+import { setupSwagger } from "./swagger";
 
 const app: Express = express();
 
 app.use(express.json());
 
+// Setup Swagger documentation
+setupSwagger(app);
+
 app.use("/api", RootRouter);
 
 export const prismaClient = new PrismaClient({
   log: ["query"],
-}).$extends({ //computed field for order address
-  result:{
-    address:{
-      formattedAddress:{
-        need:{
+}).$extends({
+  //computed field for order address
+  result: {
+    address: {
+      formattedAddress: {
+        need: {
           lineOne: true,
           lineTwo: true,
           city: true,
           country: true,
-          pincode: true
+          pincode: true,
         },
-        compute(addr){
-          return `${addr.lineOne}, ${addr.lineTwo}, ${addr.city}, ${addr.country}, ${addr.pincode}`
-        }
-      }
-    }
-  }
-})
+        compute(addr) {
+          return `${addr.lineOne}, ${addr.lineTwo}, ${addr.city}, ${addr.country}, ${addr.pincode}`;
+        },
+      },
+    },
+  },
+});
 
 app.use(errorMiddleware);
 
